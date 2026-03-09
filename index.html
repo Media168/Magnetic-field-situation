@@ -14,7 +14,6 @@
             var isLine = (ua.indexOf("Line") > -1);
             var hasParam = window.location.search.indexOf("openExternalBrowser=1") > -1;
             
-            // 如果是在 LINE 裡面，且網址還沒加上逃脫參數，就立刻補上並重新導向
             if (isLine && !hasParam) {
                 var newUrl = window.location.href;
                 newUrl += (newUrl.indexOf('?') > -1 ? '&' : '?') + 'openExternalBrowser=1';
@@ -259,6 +258,7 @@
             margin-bottom: 25px;
         }
 
+        /* 隱藏圖卡設定 */
         #shareCardHidden {
             position: fixed;
             left: -9999px;
@@ -393,10 +393,10 @@
         }
         #imageModal img {
             max-width: 100%;
-            max-height: 65vh;
+            max-height: 55vh;
             border-radius: 12px;
             box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             -webkit-touch-callout: default !important;
             -webkit-user-select: auto !important;
             user-select: auto !important;
@@ -405,12 +405,13 @@
         .modal-btn-group {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             width: 100%;
             max-width: 340px;
         }
 
-        .native-share-btn {
+        /* 綠色直載按鈕 */
+        .native-download-btn {
             width: 100%;
             padding: 14px;
             background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%);
@@ -427,6 +428,26 @@
             gap: 8px;
             animation: pulse 2s infinite;
         }
+
+        /* LINE 專用的強制跳出按鈕 (紅色) */
+        .line-jump-btn {
+            display: none;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.03); }
@@ -444,7 +465,7 @@
             cursor: pointer;
         }
 
-        /* 🌟 LINE 專屬強制阻擋畫面 🌟 */
+        /* LINE 專屬強制阻擋畫面 */
         #lineBlocker {
             display: none;
             position: fixed;
@@ -494,10 +515,14 @@
 <div id="imageModal">
     <img id="generatedImage" src="" alt="測算結果圖卡">
     <div class="modal-btn-group">
-        <button class="native-share-btn" onclick="shareImageNative()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-            點擊分享或儲存圖卡
+        <button id="btn-download-share" class="native-download-btn" onclick="downloadImageDirectly()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            點擊直接下載圖卡
         </button>
+        <div style="color: #888; font-size: 12px; text-align: center; margin-top: -5px; margin-bottom: 5px;">
+            *(若按鈕無反應，請直接長按上方圖片儲存)*
+        </div>
+
         <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
     </div>
 </div>
@@ -604,15 +629,43 @@
 </div>
 
 <script>
-    // 🌟 在網頁載入完成時，檢查是否還身處 LINE 內部 🌟
+    // 在網頁載入完成時，檢查是否身處 LINE 內部
     window.addEventListener('DOMContentLoaded', (event) => {
         var ua = navigator.userAgent || navigator.vendor || window.opera;
         var isLine = (ua.indexOf("Line") > -1);
         
         if (isLine) {
-            // 如果還在 LINE 裡面 (代表開頭的自動逃脫被攔截了)，就鎖死畫面，要求手動用外部瀏覽器開啟
             document.getElementById('lineBlocker').style.display = 'flex';
             document.getElementById('mainContainer').style.display = 'none';
+        } else {
+            // 接手自動跳轉後的出圖邏輯
+            let params = new URLSearchParams(window.location.search);
+            if(params.get('autoGen') === '1') {
+                if(params.has('ca')) document.getElementById('calA').value = params.get('ca');
+                if(params.has('ya')) document.getElementById('yearA').value = params.get('ya');
+                if(params.has('ma')) document.getElementById('monthA').value = params.get('ma');
+                if(params.has('da')) document.getElementById('dayA').value = params.get('da');
+                if(params.has('ga')) document.getElementById('genderA').value = params.get('ga');
+
+                if(params.has('cb')) document.getElementById('calB').value = params.get('cb');
+                if(params.has('yb')) document.getElementById('yearB').value = params.get('yb');
+                if(params.has('mb')) document.getElementById('monthB').value = params.get('mb');
+                if(params.has('db')) document.getElementById('dayB').value = params.get('db');
+                if(params.has('gb')) document.getElementById('genderB').value = params.get('gb');
+
+                let rel = params.get('rel');
+                if (rel) {
+                    let radio = document.querySelector('input[name="relationType"][value="'+rel+'"]');
+                    if(radio) radio.checked = true;
+                }
+
+                toggleCalHint('A');
+                toggleCalHint('B');
+
+                calculateMatch();
+                setTimeout(generateAndShare, 800);
+                window.history.replaceState(null, null, window.location.pathname);
+            }
         }
     });
 
@@ -675,11 +728,9 @@
                 try {
                     let lunarObj = Lunar.fromYmd(gregorianYear, month, day);
                     let solarObj = lunarObj.getSolar();
-                    
                     let solarYear = solarObj.getYear();
                     let solarMonth = solarObj.getMonth();
                     let solarDay = solarObj.getDay();
-                    
                     let originalLunarText = `農曆 ${mingoYear}年${month}月${day}日`;
                     
                     let liChunDay = getLiChunDay(solarYear);
@@ -786,15 +837,7 @@
         }
     }
 
-    // 將 Base64 轉換為 Blob
-    function dataURLtoBlob(dataurl) {
-        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-        while(n--){ u8arr[n] = bstr.charCodeAt(n); }
-        return new Blob([u8arr], {type:mime});
-    }
-
-    // 🌟 核心發布邏輯 (電腦直載 / 手機彈窗分享) 🌟
+    // 🌟 核心出圖與下載邏輯 🌟
     function generateAndShare() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const shareCard = document.getElementById('shareCardHidden');
@@ -810,9 +853,8 @@
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 
-                // 1. 偵測是否為電腦版 (無腦直載，不跳視窗！)
+                // 電腦版無條件直接下載 (PC 體驗)
                 const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                
                 if (isDesktop) {
                     const link = document.createElement('a');
                     link.href = imgData;
@@ -821,14 +863,11 @@
                     link.click();
                     document.body.removeChild(link);
                     loadingOverlay.style.display = 'none';
-                    return; // 電腦版執行到此結束
+                    return; 
                 }
 
-                // 2. 手機版：彈出預覽視窗與分享按鈕
-                const blob = dataURLtoBlob(imgData);
-                const blobUrl = URL.createObjectURL(blob);
-                document.getElementById('generatedImage').src = blobUrl;
-                
+                // 手機版 (Safari/Chrome)：彈出預覽視窗，讓使用者按綠色按鈕純下載
+                document.getElementById('generatedImage').src = imgData;
                 loadingOverlay.style.display = 'none';
                 document.getElementById('imageModal').style.display = 'flex';
                 
@@ -840,35 +879,18 @@
         }, 500); 
     }
 
-    // 原生分享或下載
-    async function shareImageNative() {
+    // 🌟 純粹的直接下載函式 (拔除 Share API) 🌟
+    function downloadImageDirectly() {
         const imgSrc = document.getElementById('generatedImage').src;
         if (!imgSrc) return;
 
         const filename = `域見感知_磁場測算_${new Date().getTime()}.png`;
-        
-        try {
-            const response = await fetch(imgSrc);
-            const blob = await response.blob();
-            const file = new File([blob], filename, {type: 'image/png'});
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: '域見感知測算結果'
-                });
-            } else {
-                // 如果手機不支援原生分享，退回傳統下載
-                const link = document.createElement('a');
-                link.href = imgSrc;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        } catch (error) {
-            console.log('分享取消或失敗', error);
-        }
+        const link = document.createElement('a');
+        link.href = imgSrc;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function closeImageModal() {
