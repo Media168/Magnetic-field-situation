@@ -8,6 +8,21 @@
     
     <title>域見感知 - 磁場情境對應系統</title>
     
+    <script>
+        (function() {
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isLine = (ua.indexOf("Line") > -1);
+            var hasParam = window.location.search.indexOf("openExternalBrowser=1") > -1;
+            
+            // 如果是在 LINE 裡面，且網址還沒加上逃脫參數，就立刻補上並重新導向
+            if (isLine && !hasParam) {
+                var newUrl = window.location.href;
+                newUrl += (newUrl.indexOf('?') > -1 ? '&' : '?') + 'openExternalBrowser=1';
+                window.location.replace(newUrl);
+            }
+        })();
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.min.js"></script>
     
@@ -244,7 +259,6 @@
             margin-bottom: 25px;
         }
 
-        /* 隱藏圖卡設定 (排版專用) */
         #shareCardHidden {
             position: fixed;
             left: -9999px;
@@ -361,7 +375,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 🌟 彈出圖片視窗 & 智慧環境偵測 🌟 */
+        /* 🌟 手機版彈出圖片視窗 🌟 */
         #imageModal {
             display: none;
             position: fixed;
@@ -379,10 +393,10 @@
         }
         #imageModal img {
             max-width: 100%;
-            max-height: 55vh;
+            max-height: 65vh;
             border-radius: 12px;
             box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             -webkit-touch-callout: default !important;
             -webkit-user-select: auto !important;
             user-select: auto !important;
@@ -396,7 +410,6 @@
             max-width: 340px;
         }
 
-        /* 正常手機瀏覽器的下載/分享按鈕 */
         .native-share-btn {
             width: 100%;
             padding: 14px;
@@ -414,26 +427,6 @@
             gap: 8px;
             animation: pulse 2s infinite;
         }
-
-        /* LINE 專用的強制跳出按鈕 (紅色) */
-        .line-jump-btn {
-            display: none;
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
-            color: #fff;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            animation: pulse 1.5s infinite;
-        }
-        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.03); }
@@ -450,9 +443,48 @@
             font-size: 15px;
             cursor: pointer;
         }
+
+        /* 🌟 LINE 專屬強制阻擋畫面 🌟 */
+        #lineBlocker {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #121212;
+            z-index: 999999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .blocker-box {
+            background: rgba(255, 68, 68, 0.1);
+            border: 2px dashed #ff4444;
+            padding: 25px 20px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
+
+<div id="lineBlocker">
+    <div class="blocker-box">
+        <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:15px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <h2 style="color:#ff4444; margin-top:0; margin-bottom:15px; font-size:22px;">請使用外部瀏覽器開啟</h2>
+        <p style="color:#e0e0e0; font-size:15px; line-height:1.6; margin-bottom:0; text-align:left;">
+            LINE 內部無法正常儲存測算圖卡。<br>為確保您的使用體驗，請手動：<br><br>
+            1. 點擊右上角 <b>[ ⋮ ]</b> 或右下角選單<br>
+            2. 選擇 <b style="color:#d4af37;">「以預設瀏覽器開啟」</b><br><br>
+            <span style="color:#aaa; font-size:13px; display:block; text-align:center;">跳轉至 Chrome / Safari 後即可順暢使用！</span>
+        </p>
+    </div>
+</div>
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
@@ -461,22 +493,16 @@
 
 <div id="imageModal">
     <img id="generatedImage" src="" alt="測算結果圖卡">
-    
     <div class="modal-btn-group">
-        <button id="btn-download-share" class="native-share-btn" onclick="shareImageNative()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            點擊儲存圖卡或分享
+        <button class="native-share-btn" onclick="shareImageNative()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            點擊分享或儲存圖卡
         </button>
-
-        <button id="btn-line-jump" class="line-jump-btn" onclick="jumpOutLine()">
-            🚀 LINE 封鎖存圖，點我自動跳轉外部瀏覽器
-        </button>
-
         <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
     </div>
 </div>
 
-<div class="container">
+<div class="container" id="mainContainer">
     <h2>域見感知<span class="brand-subtitle">磁場情境對應系統</span></h2>
 
     <div class="input-card">
@@ -563,27 +589,33 @@
 
 <div id="shareCardHidden">
     <h1>域見感知<br><span style="font-size: 16px; color: #aaa;">磁場情境對應分析</span></h1>
-    
     <div class="gua-box">
         <span style="color: #d4af37; font-weight:bold;">智能命卦演算</span><br><br>
         <span id="share_gua_textA"></span> <br><br> ↕ <br><br> <span id="share_gua_textB"></span>
     </div>
-    
     <div class="star-result">
         <div class="star-name" id="share_starTitle"></div>
         <div class="star-attr" id="share_starAttr"></div>
     </div>
-    
     <div class="relation-header" id="share_relationLabel"></div>
     <div class="explanation" id="share_explanation"></div>
-    
-    <div class="footer">
-        由【域見感知】專業測算生成
-    </div>
+    <div class="footer">由【域見感知】專業測算生成</div>
     <div class="cosmostar-watermark">© Cosmostar</div>
 </div>
 
 <script>
+    // 🌟 在網頁載入完成時，檢查是否還身處 LINE 內部 🌟
+    window.addEventListener('DOMContentLoaded', (event) => {
+        var ua = navigator.userAgent || navigator.vendor || window.opera;
+        var isLine = (ua.indexOf("Line") > -1);
+        
+        if (isLine) {
+            // 如果還在 LINE 裡面 (代表開頭的自動逃脫被攔截了)，就鎖死畫面，要求手動用外部瀏覽器開啟
+            document.getElementById('lineBlocker').style.display = 'flex';
+            document.getElementById('mainContainer').style.display = 'none';
+        }
+    });
+
     const starMatrix = { '乾乾':'輔弼', '兌兌':'輔弼', '離離':'輔弼', '震震':'輔弼', '巽巽':'輔弼', '坎坎':'輔弼', '艮艮':'輔弼', '坤坤':'輔弼', '乾兌':'貪狼', '兌乾':'貪狼', '離震':'貪狼', '震離':'貪狼', '艮坤':'貪狼', '坤艮':'貪狼', '巽坎':'貪狼', '坎巽':'貪狼', '乾震':'廉貞', '震乾':'廉貞', '離兌':'廉貞', '兌離':'廉貞', '艮坎':'廉貞', '坎艮':'廉貞', '巽坤':'廉貞', '坤巽':'廉貞', '乾坤':'武曲', '坤乾':'武曲', '離坎':'武曲', '坎離':'武曲', '艮兌':'武曲', '兌艮':'武曲', '巽震':'武曲', '震巽':'武曲', '乾坎':'文曲', '坎乾':'文曲', '離坤':'文曲', '坤離':'文曲', '艮震':'文曲', '震艮':'文曲', '巽兌':'文曲', '兌巽':'文曲', '乾巽':'祿存', '巽乾':'祿存', '離艮':'祿存', '艮離':'祿存', '兌坎':'祿存', '坎兌':'祿存', '震坤':'祿存', '坤震':'祿存', '乾艮':'巨門', '艮乾':'巨門', '離巽':'巨門', '巽離':'巨門', '兌坤':'巨門', '坤兌':'巨門', '震坎':'巨門', '坎震':'巨門', '乾離':'破軍', '離乾':'破軍', '艮巽':'破軍', '巽艮':'破軍', '兌震':'破軍', '震兌':'破軍', '坤坎':'破軍', '坎坤':'破軍' };
     
     const starData = {
@@ -598,41 +630,6 @@
     };
     
     const relationLabels = { 'romance': '感情婚姻解析', 'business': '事業合夥解析', 'workplace': '上司下屬解析', 'family': '父母子女解析', 'friends': '一般交友解析' };
-
-    // 🌟 自動接手 LINE 逃脫後的資料填寫 🌟
-    window.addEventListener('DOMContentLoaded', (event) => {
-        let params = new URLSearchParams(window.location.search);
-        if(params.get('autoGen') === '1') {
-            // 將剛才在 LINE 裡面輸入的資料自動補回來
-            if(params.has('ca')) document.getElementById('calA').value = params.get('ca');
-            if(params.has('ya')) document.getElementById('yearA').value = params.get('ya');
-            if(params.has('ma')) document.getElementById('monthA').value = params.get('ma');
-            if(params.has('da')) document.getElementById('dayA').value = params.get('da');
-            if(params.has('ga')) document.getElementById('genderA').value = params.get('ga');
-
-            if(params.has('cb')) document.getElementById('calB').value = params.get('cb');
-            if(params.has('yb')) document.getElementById('yearB').value = params.get('yb');
-            if(params.has('mb')) document.getElementById('monthB').value = params.get('mb');
-            if(params.has('db')) document.getElementById('dayB').value = params.get('db');
-            if(params.has('gb')) document.getElementById('genderB').value = params.get('gb');
-
-            let rel = params.get('rel');
-            if (rel) {
-                let radio = document.querySelector('input[name="relationType"][value="'+rel+'"]');
-                if(radio) radio.checked = true;
-            }
-
-            toggleCalHint('A');
-            toggleCalHint('B');
-
-            // 自動點擊運算並產生圖片
-            calculateMatch();
-            setTimeout(generateAndShare, 800);
-            
-            // 清理網址列，保持美觀
-            window.history.replaceState(null, null, window.location.pathname);
-        }
-    });
 
     function toggleCalHint(person) {
         const calType = document.getElementById(`cal${person}`).value;
@@ -789,7 +786,15 @@
         }
     }
 
-    // 🌟 核心環境偵測與出圖邏輯 🌟
+    // 將 Base64 轉換為 Blob
+    function dataURLtoBlob(dataurl) {
+        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+        return new Blob([u8arr], {type:mime});
+    }
+
+    // 🌟 核心發布邏輯 (電腦直載 / 手機彈窗分享) 🌟
     function generateAndShare() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const shareCard = document.getElementById('shareCardHidden');
@@ -805,7 +810,7 @@
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 
-                // 1. 偵測是否為電腦版 (如果是電腦版，完全不跳視窗，直接下載)
+                // 1. 偵測是否為電腦版 (無腦直載，不跳視窗！)
                 const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
                 if (isDesktop) {
@@ -816,25 +821,14 @@
                     link.click();
                     document.body.removeChild(link);
                     loadingOverlay.style.display = 'none';
-                    return; // 結束執行
+                    return; // 電腦版執行到此結束
                 }
 
-                // 2. 如果是手機版，顯示圖片彈出視窗
-                document.getElementById('generatedImage').src = imgData;
+                // 2. 手機版：彈出預覽視窗與分享按鈕
+                const blob = dataURLtoBlob(imgData);
+                const blobUrl = URL.createObjectURL(blob);
+                document.getElementById('generatedImage').src = blobUrl;
                 
-                // 3. 偵測是否為 LINE 內建瀏覽器
-                const isLineApp = /Line/i.test(navigator.userAgent);
-                
-                if (isLineApp) {
-                    // LINE：隱藏正常下載鈕，顯示紅色跳轉按鈕
-                    document.getElementById('btn-download-share').style.display = 'none';
-                    document.getElementById('btn-line-jump').style.display = 'flex';
-                } else {
-                    // 一般手機瀏覽器：顯示正常下載鈕
-                    document.getElementById('btn-download-share').style.display = 'flex';
-                    document.getElementById('btn-line-jump').style.display = 'none';
-                }
-
                 loadingOverlay.style.display = 'none';
                 document.getElementById('imageModal').style.display = 'flex';
                 
@@ -846,67 +840,39 @@
         }, 500); 
     }
 
-    // 🌟 神技：自動攜帶資料，強制跳出 LINE 開啟外部瀏覽器 🌟
-    function jumpOutLine() {
-        document.getElementById('btn-line-jump').innerText = "🔄 準備跳轉中...";
-        let params = new URLSearchParams();
-        params.append('openExternalBrowser', '1'); // LINE 官方逃脫參數
-        params.append('autoGen', '1');             // 告訴 Chrome 自動出圖
-        params.append('ca', document.getElementById('calA').value);
-        params.append('ya', document.getElementById('yearA').value);
-        params.append('ma', document.getElementById('monthA').value);
-        params.append('da', document.getElementById('dayA').value);
-        params.append('ga', document.getElementById('genderA').value);
-        params.append('cb', document.getElementById('calB').value);
-        params.append('yb', document.getElementById('yearB').value);
-        params.append('mb', document.getElementById('monthB').value);
-        params.append('db', document.getElementById('dayB').value);
-        params.append('gb', document.getElementById('genderB').value);
-        
-        const checkedRadio = document.querySelector('input[name="relationType"]:checked');
-        if (checkedRadio) params.append('rel', checkedRadio.value);
-
-        // 執行跳轉
-        window.location.href = window.location.origin + window.location.pathname + '?' + params.toString();
-    }
-
-    function dataURLtoFile(dataurl, filename) {
-        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-        while(n--){ u8arr[n] = bstr.charCodeAt(n); }
-        return new File([u8arr], filename, {type:mime});
-    }
-
-    // 一般手機瀏覽器存圖/分享
+    // 原生分享或下載
     async function shareImageNative() {
         const imgSrc = document.getElementById('generatedImage').src;
         if (!imgSrc) return;
 
         const filename = `域見感知_磁場測算_${new Date().getTime()}.png`;
-        const file = dataURLtoFile(imgSrc, filename);
+        
+        try {
+            const response = await fetch(imgSrc);
+            const blob = await response.blob();
+            const file = new File([blob], filename, {type: 'image/png'});
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
                     title: '域見感知測算結果'
                 });
-            } catch (error) {
-                console.log('分享取消');
+            } else {
+                // 如果手機不支援原生分享，退回傳統下載
+                const link = document.createElement('a');
+                link.href = imgSrc;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
-        } else {
-            const link = document.createElement('a');
-            link.href = imgSrc;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        } catch (error) {
+            console.log('分享取消或失敗', error);
         }
     }
 
     function closeImageModal() {
         document.getElementById('imageModal').style.display = 'none';
-        document.getElementById('btn-line-jump').innerText = "🚀 LINE 封鎖存圖，點我自動跳轉外部瀏覽器";
     }
 </script>
 
