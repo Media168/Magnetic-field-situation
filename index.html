@@ -361,7 +361,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 🌟 彈出圖片視窗 & 原生分享按鈕 🌟 */
+        /* 🌟 彈出圖片視窗 & LINE防呆警告區 🌟 */
         #imageModal {
             display: none;
             position: fixed;
@@ -369,7 +369,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.92);
+            background-color: rgba(0,0,0,0.95);
             z-index: 10000;
             justify-content: center;
             align-items: center;
@@ -379,11 +379,10 @@
         }
         #imageModal img {
             max-width: 100%;
-            max-height: 65vh;
+            max-height: 55vh;
             border-radius: 12px;
             box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
-            margin-bottom: 25px;
-            /* 依然保留長按能力作為備案 */
+            margin-bottom: 20px;
             -webkit-touch-callout: default !important;
             -webkit-user-select: auto !important;
             user-select: auto !important;
@@ -394,7 +393,7 @@
             flex-direction: column;
             gap: 15px;
             width: 100%;
-            max-width: 300px;
+            max-width: 340px;
         }
 
         .native-share-btn {
@@ -420,6 +419,26 @@
             100% { transform: scale(1); }
         }
 
+        /* LINE 專屬紅色警告框 */
+        .line-warning-box {
+            display: none;
+            background-color: rgba(255, 68, 68, 0.1);
+            border: 2px dashed #ff4444;
+            padding: 15px;
+            border-radius: 12px;
+            color: #ffcccc;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .line-warning-box strong {
+            color: #ff4444;
+            font-size: 16px;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
         .close-modal-btn {
             width: 100%;
             padding: 12px;
@@ -443,10 +462,19 @@
     <img id="generatedImage" src="" alt="測算結果圖卡">
     
     <div class="modal-btn-group">
-        <button class="native-share-btn" onclick="shareImageNative()">
+        
+        <button id="btn-download-share" class="native-share-btn" onclick="shareImageNative()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-            點擊直接分享 / 儲存圖卡
+            點擊下載或分享圖卡
         </button>
+
+        <div id="line-warning" class="line-warning-box">
+            <strong>⚠️ LINE 封鎖了存圖功能 ⚠️</strong>
+            1. 請點擊畫面最右上角的 <b>[ ⋮ ]</b> 或右下角選單<br>
+            2. 選擇 <b style="color:#d4af37;">「以預設瀏覽器開啟」</b><br>
+            跳轉至 Chrome / Safari 後，即可順利長按圖片或點擊按鈕下載！
+        </div>
+
         <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
     </div>
 </div>
@@ -530,7 +558,6 @@
         <div class="desc-text" id="starDesc"></div>
         
         <button class="share-btn" onclick="generateAndShare()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%); color: #fff; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3); margin-top: 15px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             產生並儲存測算圖卡
         </button>
     </div>
@@ -637,7 +664,6 @@
                     }
                     displayStr = originalLunarText;
                 } catch (e) {
-                    console.error("萬年曆轉換失敗", e);
                     displayStr = `農曆 ${mingoYear} 年 (日期有誤，僅依年份概算)`;
                 }
             } else {
@@ -730,6 +756,17 @@
         }
     }
 
+    // 🌟 將 Base64 轉換為 Blob (修復部分手機無法原生分享的問題)
+    function dataURLtoBlob(dataurl) {
+        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], {type:mime});
+    }
+
+    // 🌟 核心修改：判斷是否為 LINE 瀏覽器，強制改變介面引導 🌟
     function generateAndShare() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const shareCard = document.getElementById('shareCardHidden');
@@ -743,9 +780,28 @@
                 useCORS: true 
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
-                document.getElementById('generatedImage').src = imgData;
+                
+                // 轉換為 Blob URL 以增加長按存圖的成功率
+                const blob = dataURLtoBlob(imgData);
+                const blobUrl = URL.createObjectURL(blob);
+                document.getElementById('generatedImage').src = blobUrl;
+                
+                // 偵測是否為 LINE 內建瀏覽器
+                const isLineApp = /Line/i.test(navigator.userAgent);
+                
+                if (isLineApp) {
+                    // 如果在 LINE 裡面：隱藏沒用的下載按鈕，顯示強制跳轉警告
+                    document.getElementById('btn-download-share').style.display = 'none';
+                    document.getElementById('line-warning').style.display = 'block';
+                } else {
+                    // 如果在一般瀏覽器 (Chrome/Safari)：顯示正常的下載按鈕
+                    document.getElementById('btn-download-share').style.display = 'flex';
+                    document.getElementById('line-warning').style.display = 'none';
+                }
+
                 loadingOverlay.style.display = 'none';
                 document.getElementById('imageModal').style.display = 'flex';
+                
             }).catch(err => {
                 console.error('產生圖片失敗:', err);
                 alert('產生圖卡失敗，請稍後再試。');
@@ -754,43 +810,35 @@
         }, 500); 
     }
 
-    // 🌟 將 Base64 圖片轉換為真實檔案格式 (給 Web Share API 用)
-    function dataURLtoFile(dataurl, filename) {
-        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-        while(n--){
-            u8arr[n] = bstr.charCodeAt(n);
-        }
-        return new File([u8arr], filename, {type:mime});
-    }
-
-    // 🌟 呼叫手機原生的分享/儲存選單
+    // 🌟 原生分享或下載 (非 LINE 環境執行)
     async function shareImageNative() {
-        const imgData = document.getElementById('generatedImage').src;
-        if (!imgData || imgData === "") return;
+        const imgSrc = document.getElementById('generatedImage').src;
+        if (!imgSrc) return;
 
         const filename = `域見感知_磁場測算_${new Date().getTime()}.png`;
-        const file = dataURLtoFile(imgData, filename);
+        
+        try {
+            const response = await fetch(imgSrc);
+            const blob = await response.blob();
+            const file = new File([blob], filename, {type: 'image/png'});
 
-        // 檢查瀏覽器是否支援 Web Share API，並且允許分享檔案
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
                     title: '域見感知測算結果',
-                    text: '這是我在「域見感知」測算的磁場對應結果，非常精準，推薦你也測測看！'
+                    text: '推薦您用「域見感知」測算磁場對應結果，非常精準！'
                 });
-            } catch (error) {
-                console.log('使用者取消分享或發生錯誤', error);
+            } else {
+                // 電腦版或不支援的瀏覽器，自動轉為傳統下載
+                const link = document.createElement('a');
+                link.href = imgSrc;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
-        } else {
-            // 如果是在電腦版或其他不支援原生分享的環境，就自動退回到一般的下載模式
-            const link = document.createElement('a');
-            link.href = imgData;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        } catch (error) {
+            console.log('分享取消或失敗', error);
         }
     }
 
