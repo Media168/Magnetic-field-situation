@@ -352,7 +352,6 @@
             z-index: 10;
         }
 
-        /* 載入中遮罩 */
         #loadingOverlay {
             display: none;
             position: fixed;
@@ -378,7 +377,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 🌟 新增：產生圖片後的彈出視窗 (繞過 LINE 下載限制) 🌟 */
+        /* 🌟 優化：彈出圖片視窗 🌟 */
         #imageModal {
             display: none;
             position: fixed;
@@ -409,13 +408,25 @@
         }
         #imageModal img {
             max-width: 100%;
-            max-height: 70vh;
+            max-height: 65vh;
             border-radius: 12px;
             box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
-            pointer-events: auto; /* 確保圖片可以被長按 */
+            
+            /* 🚀 核心破解：強制 LINE 允許長按選單 🚀 */
+            -webkit-touch-callout: default !important;
+            -webkit-user-select: auto !important;
+            user-select: auto !important;
+            pointer-events: auto !important;
+        }
+        .modal-sub-hint {
+            color: #aaa;
+            font-size: 13px;
+            margin-top: 15px;
+            text-align: center;
+            line-height: 1.5;
         }
         .close-modal-btn {
-            margin-top: 25px;
+            margin-top: 20px;
             padding: 10px 40px;
             background-color: #333;
             color: #fff;
@@ -434,8 +445,9 @@
 </div>
 
 <div id="imageModal">
-    <div class="modal-hint">✨ 圖片已生成！請【長按圖片】儲存或分享 ✨</div>
+    <div class="modal-hint">✨ 圖片已生成！請【長按圖片】儲存 ✨</div>
     <img id="generatedImage" src="" alt="測算結果圖卡">
+    <div class="modal-sub-hint">※ 若長按無反應，請點擊右上角(或右下角)選單<br>「以預設瀏覽器開啟」即可順利儲存。</div>
     <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
 </div>
 
@@ -618,10 +630,10 @@
 
                     if (solarMonth === 1 || (solarMonth === 2 && solarDay < liChunDay)) {
                         calcYear = mappedMingoYear - 1;
-                        noticeStr = `<span class="correction-notice">*(自動轉換國曆 ${solarMonth}/${solarDay}，生於立春前，校正為 ${calcYear}年)*</span>`;
+                        noticeStr = `<span class="correction-notice">*(轉換國曆 ${solarMonth}/${solarDay} 立春前，校正為 ${calcYear}年)*</span>`;
                     } else {
                         calcYear = mappedMingoYear;
-                        noticeStr = `<span class="correction-notice" style="color:#d4af37;">*(自動轉換國曆 ${solarMonth}/${solarDay}，立春後)*</span>`;
+                        noticeStr = `<span class="correction-notice" style="color:#d4af37;">*(轉換國曆 ${solarMonth}/${solarDay} 立春後)*</span>`;
                     }
                     displayStr = originalLunarText;
                 } catch (e) {
@@ -718,7 +730,6 @@
         }
     }
 
-    // 🌟 核心修改：改為彈出圖片讓使用者長按儲存，繞過 LINE 下載限制 🌟
     function generateAndShare() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const shareCard = document.getElementById('shareCardHidden');
@@ -731,18 +742,10 @@
                 logging: false,
                 useCORS: true 
             }).then(canvas => {
-                // 將 Canvas 轉換成圖片 Base64 格式
                 const imgData = canvas.toDataURL('image/png');
-                
-                // 把產生的圖片放進我們設定好的彈出視窗的 <img> 標籤中
                 document.getElementById('generatedImage').src = imgData;
-                
-                // 關閉 Loading 遮罩
                 loadingOverlay.style.display = 'none';
-                
-                // 顯示彈出視窗
                 document.getElementById('imageModal').style.display = 'flex';
-                
             }).catch(err => {
                 console.error('產生圖片失敗:', err);
                 alert('產生圖卡失敗，請稍後再試。');
@@ -751,7 +754,6 @@
         }, 500); 
     }
 
-    // 關閉圖片彈出視窗
     function closeImageModal() {
         document.getElementById('imageModal').style.display = 'none';
     }
