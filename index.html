@@ -744,4 +744,171 @@
                 alert("請至少輸入兩人的民國出生年次。"); return; 
             }
             if (!checkedRadio) {
-                alert
+                alert("請選擇兩人關係情境。"); return;
+            }
+            
+            const relationType = checkedRadio.value;
+
+            let dataA = processPersonData(calA, yearA, monthA, dayA, genderA);
+            let dataB = processPersonData(calB, yearB, monthB, dayB, genderB);
+
+            const combineKey = dataA.gua + dataB.gua;
+            const star = starMatrix[combineKey];
+            
+            if(!star) { alert("演算發生錯誤，請重新確認年次。"); return; }
+            
+            const resultData = starData[star];
+            const explanation = resultData[relationType];
+
+            document.getElementById('guaDisplay').innerHTML = `
+                對象A：${dataA.gua}卦 [${dataA.display}] <br>${dataA.notice}<br><br>
+                對象B：${dataB.gua}卦 [${dataB.display}] <br>${dataB.notice}
+            `;
+            document.getElementById('starTitle').innerText = star;
+            document.getElementById('starAttr').innerText = resultData.attr;
+            document.getElementById('relationTag').innerText = `情境：${relationLabels[relationType]}`;
+            document.getElementById('starDesc').innerText = explanation;
+            
+            const resultArea = document.getElementById('resultArea');
+            resultArea.style.display = 'block';
+            
+            let cleanNoticeA = dataA.notice.replace(/<[^>]*>?/gm, '');
+            let cleanNoticeB = dataB.notice.replace(/<[^>]*>?/gm, '');
+
+            document.getElementById('share_gua_textA').innerHTML = `對象A：${dataA.gua}卦<br><span style="font-size:12px;color:#aaa;">${dataA.display} ${cleanNoticeA}</span>`;
+            document.getElementById('share_gua_textB').innerHTML = `對象B：${dataB.gua}卦<br><span style="font-size:12px;color:#aaa;">${dataB.display} ${cleanNoticeB}</span>`;
+            
+            document.getElementById('share_starTitle').innerText = star;
+            document.getElementById('share_starAttr').innerText = resultData.attr;
+            document.getElementById('share_relationLabel').innerText = `【${relationLabels[relationType]}】深度全面解析`;
+            document.getElementById('share_explanation').innerText = explanation;
+            
+        } catch (error) {
+            console.error("解析錯誤: ", error);
+            alert("系統發生錯誤，請確認輸入日期的正確性。");
+        }
+    }
+
+    // 🌟 核心環境偵測與出圖邏輯 🌟
+    function generateAndShare() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const shareCard = document.getElementById('shareCardHidden');
+        loadingOverlay.style.display = 'flex';
+        document.getElementById('loadingText').innerText = "產生高畫質圖卡中...";
+        
+        setTimeout(() => {
+            html2canvas(shareCard, {
+                scale: 2, 
+                backgroundColor: '#121212',
+                logging: false,
+                useCORS: true 
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                
+                // 1. 偵測是否為電腦版 (如果是電腦版，完全不跳視窗，直接下載)
+                const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                if (isDesktop) {
+                    const link = document.createElement('a');
+                    link.href = imgData;
+                    link.download = `域見感知_磁場測算_${new Date().getTime()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    loadingOverlay.style.display = 'none';
+                    return; // 結束執行
+                }
+
+                // 2. 如果是手機版，顯示圖片彈出視窗
+                document.getElementById('generatedImage').src = imgData;
+                
+                // 3. 偵測是否為 LINE 內建瀏覽器
+                const isLineApp = /Line/i.test(navigator.userAgent);
+                
+                if (isLineApp) {
+                    // LINE：隱藏正常下載鈕，顯示紅色跳轉按鈕
+                    document.getElementById('btn-download-share').style.display = 'none';
+                    document.getElementById('btn-line-jump').style.display = 'flex';
+                } else {
+                    // 一般手機瀏覽器：顯示正常下載鈕
+                    document.getElementById('btn-download-share').style.display = 'flex';
+                    document.getElementById('btn-line-jump').style.display = 'none';
+                }
+
+                loadingOverlay.style.display = 'none';
+                document.getElementById('imageModal').style.display = 'flex';
+                
+            }).catch(err => {
+                console.error('產生圖片失敗:', err);
+                alert('產生圖卡失敗，請稍後再試。');
+                loadingOverlay.style.display = 'none';
+            });
+        }, 500); 
+    }
+
+    // 🌟 神技：自動攜帶資料，強制跳出 LINE 開啟外部瀏覽器 🌟
+    function jumpOutLine() {
+        document.getElementById('btn-line-jump').innerText = "🔄 準備跳轉中...";
+        let params = new URLSearchParams();
+        params.append('openExternalBrowser', '1'); // LINE 官方逃脫參數
+        params.append('autoGen', '1');             // 告訴 Chrome 自動出圖
+        params.append('ca', document.getElementById('calA').value);
+        params.append('ya', document.getElementById('yearA').value);
+        params.append('ma', document.getElementById('monthA').value);
+        params.append('da', document.getElementById('dayA').value);
+        params.append('ga', document.getElementById('genderA').value);
+        params.append('cb', document.getElementById('calB').value);
+        params.append('yb', document.getElementById('yearB').value);
+        params.append('mb', document.getElementById('monthB').value);
+        params.append('db', document.getElementById('dayB').value);
+        params.append('gb', document.getElementById('genderB').value);
+        
+        const checkedRadio = document.querySelector('input[name="relationType"]:checked');
+        if (checkedRadio) params.append('rel', checkedRadio.value);
+
+        // 執行跳轉
+        window.location.href = window.location.origin + window.location.pathname + '?' + params.toString();
+    }
+
+    function dataURLtoFile(dataurl, filename) {
+        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+        return new File([u8arr], filename, {type:mime});
+    }
+
+    // 一般手機瀏覽器存圖/分享
+    async function shareImageNative() {
+        const imgSrc = document.getElementById('generatedImage').src;
+        if (!imgSrc) return;
+
+        const filename = `域見感知_磁場測算_${new Date().getTime()}.png`;
+        const file = dataURLtoFile(imgSrc, filename);
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: '域見感知測算結果'
+                });
+            } catch (error) {
+                console.log('分享取消');
+            }
+        } else {
+            const link = document.createElement('a');
+            link.href = imgSrc;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+        document.getElementById('btn-line-jump').innerText = "🚀 LINE 封鎖存圖，點我自動跳轉外部瀏覽器";
+    }
+</script>
+
+</body>
+</html>
