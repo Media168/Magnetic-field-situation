@@ -244,22 +244,6 @@
             margin-bottom: 25px;
         }
 
-        button.share-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: transparent;
-            color: var(--jade-green);
-            border: 2px solid var(--jade-green);
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
         /* 隱藏圖卡設定 (排版專用) */
         #shareCardHidden {
             position: fixed;
@@ -377,7 +361,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 🌟 優化：彈出圖片視窗 🌟 */
+        /* 🌟 彈出圖片視窗 & 原生分享按鈕 🌟 */
         #imageModal {
             display: none;
             position: fixed;
@@ -393,46 +377,57 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        #imageModal .modal-hint {
-            color: var(--primary-gold);
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
-            100% { opacity: 1; transform: scale(1); }
-        }
         #imageModal img {
             max-width: 100%;
             max-height: 65vh;
             border-radius: 12px;
             box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
-            
-            /* 🚀 核心破解：強制 LINE 允許長按選單 🚀 */
+            margin-bottom: 25px;
+            /* 依然保留長按能力作為備案 */
             -webkit-touch-callout: default !important;
             -webkit-user-select: auto !important;
             user-select: auto !important;
-            pointer-events: auto !important;
         }
-        .modal-sub-hint {
-            color: #aaa;
-            font-size: 13px;
-            margin-top: 15px;
-            text-align: center;
-            line-height: 1.5;
+        
+        .modal-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 300px;
         }
-        .close-modal-btn {
-            margin-top: 20px;
-            padding: 10px 40px;
-            background-color: #333;
+
+        .native-share-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%);
             color: #fff;
-            border: 1px solid #555;
-            border-radius: 20px;
+            border: none;
+            border-radius: 25px;
             font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        .close-modal-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: transparent;
+            color: #ccc;
+            border: 1px solid #555;
+            border-radius: 25px;
+            font-size: 15px;
             cursor: pointer;
         }
     </style>
@@ -445,10 +440,15 @@
 </div>
 
 <div id="imageModal">
-    <div class="modal-hint">✨ 圖片已生成！請【長按圖片】儲存 ✨</div>
     <img id="generatedImage" src="" alt="測算結果圖卡">
-    <div class="modal-sub-hint">※ 若長按無反應，請點擊右上角(或右下角)選單<br>「以預設瀏覽器開啟」即可順利儲存。</div>
-    <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
+    
+    <div class="modal-btn-group">
+        <button class="native-share-btn" onclick="shareImageNative()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            點擊直接分享 / 儲存圖卡
+        </button>
+        <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
+    </div>
 </div>
 
 <div class="container">
@@ -529,9 +529,9 @@
         </div>
         <div class="desc-text" id="starDesc"></div>
         
-        <button class="share-btn" onclick="generateAndShare()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            產生專屬測算圖卡
+        <button class="share-btn" onclick="generateAndShare()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%); color: #fff; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3); margin-top: 15px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            產生並儲存測算圖卡
         </button>
     </div>
 </div>
@@ -752,6 +752,46 @@
                 loadingOverlay.style.display = 'none';
             });
         }, 500); 
+    }
+
+    // 🌟 將 Base64 圖片轉換為真實檔案格式 (給 Web Share API 用)
+    function dataURLtoFile(dataurl, filename) {
+        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, {type:mime});
+    }
+
+    // 🌟 呼叫手機原生的分享/儲存選單
+    async function shareImageNative() {
+        const imgData = document.getElementById('generatedImage').src;
+        if (!imgData || imgData === "") return;
+
+        const filename = `域見感知_磁場測算_${new Date().getTime()}.png`;
+        const file = dataURLtoFile(imgData, filename);
+
+        // 檢查瀏覽器是否支援 Web Share API，並且允許分享檔案
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: '域見感知測算結果',
+                    text: '這是我在「域見感知」測算的磁場對應結果，非常精準，推薦你也測測看！'
+                });
+            } catch (error) {
+                console.log('使用者取消分享或發生錯誤', error);
+            }
+        } else {
+            // 如果是在電腦版或其他不支援原生分享的環境，就自動退回到一般的下載模式
+            const link = document.createElement('a');
+            link.href = imgData;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     }
 
     function closeImageModal() {
