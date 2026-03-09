@@ -375,7 +375,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 🌟 手機版彈出圖片視窗 🌟 */
+        /* 🌟 手機版彈出圖片視窗 (雙按鈕排版) 🌟 */
         #imageModal {
             display: none;
             position: fixed;
@@ -426,43 +426,36 @@
             justify-content: center;
             align-items: center;
             gap: 8px;
-            animation: pulse 2s infinite;
         }
-
-        /* LINE 專用的強制跳出按鈕 (紅色) */
-        .line-jump-btn {
-            display: none;
+        
+        /* 藍色分享按鈕 */
+        .native-share-btn {
             width: 100%;
             padding: 14px;
-            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
             color: #fff;
             border: none;
             border-radius: 25px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+            box-shadow: 0 4px 15px rgba(30, 136, 229, 0.4);
+            display: flex;
             justify-content: center;
             align-items: center;
             gap: 8px;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
         }
 
         .close-modal-btn {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             background-color: transparent;
             color: #ccc;
             border: 1px solid #555;
             border-radius: 25px;
             font-size: 15px;
             cursor: pointer;
+            margin-top: 5px;
         }
 
         /* LINE 專屬強制阻擋畫面 */
@@ -515,11 +508,17 @@
 <div id="imageModal">
     <img id="generatedImage" src="" alt="測算結果圖卡">
     <div class="modal-btn-group">
-        <button id="btn-download-share" class="native-download-btn" onclick="downloadImageDirectly()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            點擊直接下載圖卡
+        <button class="native-download-btn" onclick="downloadImageDirectly()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            下載儲存圖卡
         </button>
-        <div style="color: #888; font-size: 12px; text-align: center; margin-top: -5px; margin-bottom: 5px;">
+        
+        <button class="native-share-btn" onclick="shareImageNative()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            直接分享給好友
+        </button>
+
+        <div style="color: #888; font-size: 12px; text-align: center; margin-top: -2px;">
             *(若按鈕無反應，請直接長按上方圖片儲存)*
         </div>
 
@@ -638,7 +637,6 @@
             document.getElementById('lineBlocker').style.display = 'flex';
             document.getElementById('mainContainer').style.display = 'none';
         } else {
-            // 接手自動跳轉後的出圖邏輯
             let params = new URLSearchParams(window.location.search);
             if(params.get('autoGen') === '1') {
                 if(params.has('ca')) document.getElementById('calA').value = params.get('ca');
@@ -837,7 +835,14 @@
         }
     }
 
-    // 🌟 核心出圖與下載邏輯 🌟
+    function dataURLtoBlob(dataurl) {
+        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+        return new Blob([u8arr], {type:mime});
+    }
+
+    // 🌟 核心出圖邏輯 🌟
     function generateAndShare() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const shareCard = document.getElementById('shareCardHidden');
@@ -853,7 +858,7 @@
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 
-                // 電腦版無條件直接下載 (PC 體驗)
+                // 電腦版無條件直接下載 (不跳視窗)
                 const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 if (isDesktop) {
                     const link = document.createElement('a');
@@ -866,8 +871,10 @@
                     return; 
                 }
 
-                // 手機版 (Safari/Chrome)：彈出預覽視窗，讓使用者按綠色按鈕純下載
-                document.getElementById('generatedImage').src = imgData;
+                // 手機版：彈出雙按鈕預覽視窗
+                const blob = dataURLtoBlob(imgData);
+                const blobUrl = URL.createObjectURL(blob);
+                document.getElementById('generatedImage').src = blobUrl;
                 loadingOverlay.style.display = 'none';
                 document.getElementById('imageModal').style.display = 'flex';
                 
@@ -879,7 +886,7 @@
         }, 500); 
     }
 
-    // 🌟 純粹的直接下載函式 (拔除 Share API) 🌟
+    // 🟩 純下載功能 (綠色按鈕)
     function downloadImageDirectly() {
         const imgSrc = document.getElementById('generatedImage').src;
         if (!imgSrc) return;
@@ -891,6 +898,31 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+    // 🟦 純分享功能 (藍色按鈕)
+    async function shareImageNative() {
+        const imgSrc = document.getElementById('generatedImage').src;
+        if (!imgSrc) return;
+
+        const filename = `域見感知_磁場測算_${new Date().getTime()}.png`;
+        
+        try {
+            const response = await fetch(imgSrc);
+            const blob = await response.blob();
+            const file = new File([blob], filename, {type: 'image/png'});
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: '域見感知測算結果'
+                });
+            } else {
+                alert('您的裝置或瀏覽器暫時不支援快速分享，請使用上方的「下載儲存」按鈕。');
+            }
+        } catch (error) {
+            console.log('分享取消或失敗', error);
+        }
     }
 
     function closeImageModal() {
