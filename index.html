@@ -260,7 +260,7 @@
             gap: 8px;
         }
 
-        /* 隱藏圖卡設定 */
+        /* 隱藏圖卡設定 (排版專用) */
         #shareCardHidden {
             position: fixed;
             left: -9999px;
@@ -352,6 +352,7 @@
             z-index: 10;
         }
 
+        /* 載入中遮罩 */
         #loadingOverlay {
             display: none;
             position: fixed;
@@ -376,6 +377,53 @@
             margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 🌟 新增：產生圖片後的彈出視窗 (繞過 LINE 下載限制) 🌟 */
+        #imageModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.92);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #imageModal .modal-hint {
+            color: var(--primary-gold);
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        #imageModal img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+            pointer-events: auto; /* 確保圖片可以被長按 */
+        }
+        .close-modal-btn {
+            margin-top: 25px;
+            padding: 10px 40px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -383,6 +431,12 @@
 <div id="loadingOverlay">
     <div class="spinner"></div>
     <div>域見感知演算中...</div>
+</div>
+
+<div id="imageModal">
+    <div class="modal-hint">✨ 圖片已生成！請【長按圖片】儲存或分享 ✨</div>
+    <img id="generatedImage" src="" alt="測算結果圖卡">
+    <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
 </div>
 
 <div class="container">
@@ -465,7 +519,7 @@
         
         <button class="share-btn" onclick="generateAndShare()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            儲存專屬測算圖卡
+            產生專屬測算圖卡
         </button>
     </div>
 </div>
@@ -508,7 +562,6 @@
     
     const relationLabels = { 'romance': '感情婚姻解析', 'business': '事業合夥解析', 'workplace': '上司下屬解析', 'family': '父母子女解析', 'friends': '一般交友解析' };
 
-    // UI 動態切換提示字功能 (移除了閏月邏輯)
     function toggleCalHint(person) {
         const calType = document.getElementById(`cal${person}`).value;
         const monthInput = document.getElementById(`month${person}`);
@@ -551,7 +604,6 @@
         if (calType === 'lunar') {
             if (!isNaN(month) && !isNaN(day)) {
                 try {
-                    // 直接將輸入的月份視為一般月份丟給萬年曆引擎
                     let lunarObj = Lunar.fromYmd(gregorianYear, month, day);
                     let solarObj = lunarObj.getSolar();
                     
@@ -579,7 +631,6 @@
             } else {
                 displayStr = `農曆 ${mingoYear} 年 (未填月/日，無法精準校對)`;
             }
-
         } else {
             if (month === 1) {
                 calcYear = mingoYear - 1;
@@ -599,20 +650,17 @@
                 if (isNaN(month) || isNaN(day)) displayStr += ` (未填完整月/日，僅供參考)`;
             }
         }
-
         return { calcYear: calcYear, display: displayStr, notice: noticeStr, gua: getGua(calcYear, gender) };
     }
 
     function calculateMatch() {
         try {
-            // A (移除閏月讀取)
             let calA = document.getElementById('calA').value;
             let yearA = parseInt(document.getElementById('yearA').value);
             let monthA = parseInt(document.getElementById('monthA').value);
             let dayA = parseInt(document.getElementById('dayA').value);
             let genderA = document.getElementById('genderA').value;
             
-            // B (移除閏月讀取)
             let calB = document.getElementById('calB').value;
             let yearB = parseInt(document.getElementById('yearB').value);
             let monthB = parseInt(document.getElementById('monthB').value);
@@ -630,7 +678,6 @@
             
             const relationType = checkedRadio.value;
 
-            // 送入資料處理引擎 (移除了 isLeap 參數)
             let dataA = processPersonData(calA, yearA, monthA, dayA, genderA);
             let dataB = processPersonData(calB, yearB, monthB, dayB, genderB);
 
@@ -671,6 +718,7 @@
         }
     }
 
+    // 🌟 核心修改：改為彈出圖片讓使用者長按儲存，繞過 LINE 下載限制 🌟
     function generateAndShare() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const shareCard = document.getElementById('shareCardHidden');
@@ -683,20 +731,29 @@
                 logging: false,
                 useCORS: true 
             }).then(canvas => {
+                // 將 Canvas 轉換成圖片 Base64 格式
                 const imgData = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = imgData;
-                link.download = `域見感知_磁場測算_${new Date().getTime()}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                
+                // 把產生的圖片放進我們設定好的彈出視窗的 <img> 標籤中
+                document.getElementById('generatedImage').src = imgData;
+                
+                // 關閉 Loading 遮罩
                 loadingOverlay.style.display = 'none';
+                
+                // 顯示彈出視窗
+                document.getElementById('imageModal').style.display = 'flex';
+                
             }).catch(err => {
                 console.error('產生圖片失敗:', err);
                 alert('產生圖卡失敗，請稍後再試。');
                 loadingOverlay.style.display = 'none';
             });
         }, 500); 
+    }
+
+    // 關閉圖片彈出視窗
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
     }
 </script>
 
