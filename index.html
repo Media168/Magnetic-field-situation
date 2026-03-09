@@ -8,6 +8,15 @@
     
     <title>域見感知 - 磁場情境對應系統</title>
     
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      // 基礎網頁瀏覽追蹤
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
     <script>
         (function() {
             var ua = navigator.userAgent || navigator.vendor || window.opera;
@@ -795,6 +804,14 @@
             
             const relationType = checkedRadio.value;
 
+            // 🌟 觸發 GA4 事件：計算解析 🌟
+            if (typeof gtag === 'function') {
+                gtag('event', 'calculate_match', {
+                    'event_category': 'Engagement',
+                    'event_label': relationType
+                });
+            }
+
             let dataA = processPersonData(calA, yearA, monthA, dayA, genderA);
             let dataB = processPersonData(calB, yearB, monthB, dayB, genderB);
 
@@ -849,6 +866,13 @@
         loadingOverlay.style.display = 'flex';
         document.getElementById('loadingText').innerText = "產生高畫質圖卡中...";
         
+        // 🌟 觸發 GA4 事件：產生圖卡 🌟
+        if (typeof gtag === 'function') {
+            gtag('event', 'generate_image', {
+                'event_category': 'Engagement'
+            });
+        }
+
         setTimeout(() => {
             html2canvas(shareCard, {
                 scale: 2, 
@@ -888,6 +912,11 @@
 
     // 🟩 純下載功能 (綠色按鈕)
     function downloadImageDirectly() {
+        // 🌟 觸發 GA4 事件：下載圖卡 🌟
+        if (typeof gtag === 'function') {
+            gtag('event', 'download_image', { 'event_category': 'Conversion' });
+        }
+
         const imgSrc = document.getElementById('generatedImage').src;
         if (!imgSrc) return;
 
@@ -902,6 +931,11 @@
 
     // 🟦 純分享功能 (藍色按鈕)
     async function shareImageNative() {
+        // 🌟 觸發 GA4 事件：分享圖卡 🌟
+        if (typeof gtag === 'function') {
+            gtag('event', 'share_image', { 'event_category': 'Conversion' });
+        }
+
         const imgSrc = document.getElementById('generatedImage').src;
         if (!imgSrc) return;
 
