@@ -361,7 +361,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 🌟 彈出圖片視窗 & LINE防呆警告區 🌟 */
+        /* 🌟 彈出圖片視窗 & 智慧環境偵測 🌟 */
         #imageModal {
             display: none;
             position: fixed;
@@ -396,6 +396,7 @@
             max-width: 340px;
         }
 
+        /* 正常手機瀏覽器的下載/分享按鈕 */
         .native-share-btn {
             width: 100%;
             padding: 14px;
@@ -413,30 +414,30 @@
             gap: 8px;
             animation: pulse 2s infinite;
         }
+
+        /* LINE 專用的強制跳出按鈕 (紅色) */
+        .line-jump-btn {
+            display: none;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.03); }
             100% { transform: scale(1); }
-        }
-
-        /* LINE 專屬紅色警告框 */
-        .line-warning-box {
-            display: none;
-            background-color: rgba(255, 68, 68, 0.1);
-            border: 2px dashed #ff4444;
-            padding: 15px;
-            border-radius: 12px;
-            color: #ffcccc;
-            text-align: left;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        .line-warning-box strong {
-            color: #ff4444;
-            font-size: 16px;
-            display: block;
-            text-align: center;
-            margin-bottom: 10px;
         }
 
         .close-modal-btn {
@@ -455,25 +456,21 @@
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <div>域見感知演算中...</div>
+    <div id="loadingText">域見感知演算中...</div>
 </div>
 
 <div id="imageModal">
     <img id="generatedImage" src="" alt="測算結果圖卡">
     
     <div class="modal-btn-group">
-        
         <button id="btn-download-share" class="native-share-btn" onclick="shareImageNative()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-            點擊下載或分享圖卡
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            點擊儲存圖卡或分享
         </button>
 
-        <div id="line-warning" class="line-warning-box">
-            <strong>⚠️ LINE 封鎖了存圖功能 ⚠️</strong>
-            1. 請點擊畫面最右上角的 <b>[ ⋮ ]</b> 或右下角選單<br>
-            2. 選擇 <b style="color:#d4af37;">「以預設瀏覽器開啟」</b><br>
-            跳轉至 Chrome / Safari 後，即可順利長按圖片或點擊按鈕下載！
-        </div>
+        <button id="btn-line-jump" class="line-jump-btn" onclick="jumpOutLine()">
+            🚀 LINE 封鎖存圖，點我自動跳轉外部瀏覽器
+        </button>
 
         <button class="close-modal-btn" onclick="closeImageModal()">關閉視窗</button>
     </div>
@@ -529,8 +526,12 @@
     </div>
 
     <label style="text-align: center; margin-bottom: 12px; display: block; color: #aaa;">請選擇兩人關係情境</label>
+    
     <div class="relation-group">
-        <input type="radio" id="rel_romance" name="relationType" value="romance" checked>
+        <input type="radio" id="rel_friends" name="relationType" value="friends" checked>
+        <label for="rel_friends" class="relation-label">一般交友</label>
+
+        <input type="radio" id="rel_romance" name="relationType" value="romance">
         <label for="rel_romance" class="relation-label">感情婚姻</label>
         
         <input type="radio" id="rel_business" name="relationType" value="business">
@@ -541,9 +542,6 @@
         
         <input type="radio" id="rel_family" name="relationType" value="family">
         <label for="rel_family" class="relation-label">父母子女</label>
-        
-        <input type="radio" id="rel_friends" name="relationType" value="friends">
-        <label for="rel_friends" class="relation-label">一般交友</label>
     </div>
 
     <button class="submit-btn" onclick="calculateMatch()">解析專屬磁場</button>
@@ -600,6 +598,41 @@
     };
     
     const relationLabels = { 'romance': '感情婚姻解析', 'business': '事業合夥解析', 'workplace': '上司下屬解析', 'family': '父母子女解析', 'friends': '一般交友解析' };
+
+    // 🌟 自動接手 LINE 逃脫後的資料填寫 🌟
+    window.addEventListener('DOMContentLoaded', (event) => {
+        let params = new URLSearchParams(window.location.search);
+        if(params.get('autoGen') === '1') {
+            // 將剛才在 LINE 裡面輸入的資料自動補回來
+            if(params.has('ca')) document.getElementById('calA').value = params.get('ca');
+            if(params.has('ya')) document.getElementById('yearA').value = params.get('ya');
+            if(params.has('ma')) document.getElementById('monthA').value = params.get('ma');
+            if(params.has('da')) document.getElementById('dayA').value = params.get('da');
+            if(params.has('ga')) document.getElementById('genderA').value = params.get('ga');
+
+            if(params.has('cb')) document.getElementById('calB').value = params.get('cb');
+            if(params.has('yb')) document.getElementById('yearB').value = params.get('yb');
+            if(params.has('mb')) document.getElementById('monthB').value = params.get('mb');
+            if(params.has('db')) document.getElementById('dayB').value = params.get('db');
+            if(params.has('gb')) document.getElementById('genderB').value = params.get('gb');
+
+            let rel = params.get('rel');
+            if (rel) {
+                let radio = document.querySelector('input[name="relationType"][value="'+rel+'"]');
+                if(radio) radio.checked = true;
+            }
+
+            toggleCalHint('A');
+            toggleCalHint('B');
+
+            // 自動點擊運算並產生圖片
+            calculateMatch();
+            setTimeout(generateAndShare, 800);
+            
+            // 清理網址列，保持美觀
+            window.history.replaceState(null, null, window.location.pathname);
+        }
+    });
 
     function toggleCalHint(person) {
         const calType = document.getElementById(`cal${person}`).value;
@@ -711,141 +744,4 @@
                 alert("請至少輸入兩人的民國出生年次。"); return; 
             }
             if (!checkedRadio) {
-                alert("請選擇兩人關係情境。"); return;
-            }
-            
-            const relationType = checkedRadio.value;
-
-            let dataA = processPersonData(calA, yearA, monthA, dayA, genderA);
-            let dataB = processPersonData(calB, yearB, monthB, dayB, genderB);
-
-            const combineKey = dataA.gua + dataB.gua;
-            const star = starMatrix[combineKey];
-            
-            if(!star) { alert("演算發生錯誤，請重新確認年次。"); return; }
-            
-            const resultData = starData[star];
-            const explanation = resultData[relationType];
-
-            document.getElementById('guaDisplay').innerHTML = `
-                對象A：${dataA.gua}卦 [${dataA.display}] <br>${dataA.notice}<br><br>
-                對象B：${dataB.gua}卦 [${dataB.display}] <br>${dataB.notice}
-            `;
-            document.getElementById('starTitle').innerText = star;
-            document.getElementById('starAttr').innerText = resultData.attr;
-            document.getElementById('relationTag').innerText = `情境：${relationLabels[relationType]}`;
-            document.getElementById('starDesc').innerText = explanation;
-            
-            const resultArea = document.getElementById('resultArea');
-            resultArea.style.display = 'block';
-            
-            let cleanNoticeA = dataA.notice.replace(/<[^>]*>?/gm, '');
-            let cleanNoticeB = dataB.notice.replace(/<[^>]*>?/gm, '');
-
-            document.getElementById('share_gua_textA').innerHTML = `對象A：${dataA.gua}卦<br><span style="font-size:12px;color:#aaa;">${dataA.display} ${cleanNoticeA}</span>`;
-            document.getElementById('share_gua_textB').innerHTML = `對象B：${dataB.gua}卦<br><span style="font-size:12px;color:#aaa;">${dataB.display} ${cleanNoticeB}</span>`;
-            
-            document.getElementById('share_starTitle').innerText = star;
-            document.getElementById('share_starAttr').innerText = resultData.attr;
-            document.getElementById('share_relationLabel').innerText = `【${relationLabels[relationType]}】深度全面解析`;
-            document.getElementById('share_explanation').innerText = explanation;
-            
-        } catch (error) {
-            console.error("解析錯誤: ", error);
-            alert("系統發生錯誤，請確認輸入日期的正確性。");
-        }
-    }
-
-    // 🌟 將 Base64 轉換為 Blob (修復部分手機無法原生分享的問題)
-    function dataURLtoBlob(dataurl) {
-        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-        while(n--){
-            u8arr[n] = bstr.charCodeAt(n);
-        }
-        return new Blob([u8arr], {type:mime});
-    }
-
-    // 🌟 核心修改：判斷是否為 LINE 瀏覽器，強制改變介面引導 🌟
-    function generateAndShare() {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const shareCard = document.getElementById('shareCardHidden');
-        loadingOverlay.style.display = 'flex';
-        
-        setTimeout(() => {
-            html2canvas(shareCard, {
-                scale: 2, 
-                backgroundColor: '#121212',
-                logging: false,
-                useCORS: true 
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                
-                // 轉換為 Blob URL 以增加長按存圖的成功率
-                const blob = dataURLtoBlob(imgData);
-                const blobUrl = URL.createObjectURL(blob);
-                document.getElementById('generatedImage').src = blobUrl;
-                
-                // 偵測是否為 LINE 內建瀏覽器
-                const isLineApp = /Line/i.test(navigator.userAgent);
-                
-                if (isLineApp) {
-                    // 如果在 LINE 裡面：隱藏沒用的下載按鈕，顯示強制跳轉警告
-                    document.getElementById('btn-download-share').style.display = 'none';
-                    document.getElementById('line-warning').style.display = 'block';
-                } else {
-                    // 如果在一般瀏覽器 (Chrome/Safari)：顯示正常的下載按鈕
-                    document.getElementById('btn-download-share').style.display = 'flex';
-                    document.getElementById('line-warning').style.display = 'none';
-                }
-
-                loadingOverlay.style.display = 'none';
-                document.getElementById('imageModal').style.display = 'flex';
-                
-            }).catch(err => {
-                console.error('產生圖片失敗:', err);
-                alert('產生圖卡失敗，請稍後再試。');
-                loadingOverlay.style.display = 'none';
-            });
-        }, 500); 
-    }
-
-    // 🌟 原生分享或下載 (非 LINE 環境執行)
-    async function shareImageNative() {
-        const imgSrc = document.getElementById('generatedImage').src;
-        if (!imgSrc) return;
-
-        const filename = `域見感知_磁場測算_${new Date().getTime()}.png`;
-        
-        try {
-            const response = await fetch(imgSrc);
-            const blob = await response.blob();
-            const file = new File([blob], filename, {type: 'image/png'});
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: '域見感知測算結果',
-                    text: '推薦您用「域見感知」測算磁場對應結果，非常精準！'
-                });
-            } else {
-                // 電腦版或不支援的瀏覽器，自動轉為傳統下載
-                const link = document.createElement('a');
-                link.href = imgSrc;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        } catch (error) {
-            console.log('分享取消或失敗', error);
-        }
-    }
-
-    function closeImageModal() {
-        document.getElementById('imageModal').style.display = 'none';
-    }
-</script>
-
-</body>
-</html>
+                alert
