@@ -8,14 +8,14 @@
     
     <title>域見感知 - 磁場情境對應系統</title>
     
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HRLMTHHJG8"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
       // 基礎網頁瀏覽追蹤
-      gtag('config', 'G-HRLMTHHJG8');
+      gtag('config', 'G-XXXXXXXXXX');
     </script>
     <script>
         (function() {
@@ -267,6 +267,17 @@
             margin-bottom: 25px;
         }
 
+        /* 🌟 系統防護免責聲明 (UI用) 🌟 */
+        .sys-disclaimer {
+            text-align: center;
+            font-size: 12px;
+            color: #555;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dashed #333;
+            line-height: 1.5;
+        }
+
         /* 隱藏圖卡設定 */
         #shareCardHidden {
             position: fixed;
@@ -338,7 +349,7 @@
         
         #shareCardHidden .footer {
             position: absolute;
-            bottom: 25px;
+            bottom: 15px;
             left: 0;
             width: 100%;
             text-align: center;
@@ -618,6 +629,10 @@
             產生並儲存測算圖卡
         </button>
     </div>
+
+    <div class="sys-disclaimer">
+        ※ 測算結果為學術參考之磁場對應關係，僅供參考。
+    </div>
 </div>
 
 <div id="shareCardHidden">
@@ -632,7 +647,11 @@
     </div>
     <div class="relation-header" id="share_relationLabel"></div>
     <div class="explanation" id="share_explanation"></div>
-    <div class="footer">由【域見感知】專業測算生成</div>
+    
+    <div class="footer">
+        <div style="color: #888; font-size: 11px; margin-bottom: 5px; font-weight: normal;">※ 測算結果為學術參考之磁場對應關係，僅供參考</div>
+        由【域見感知】專業測算生成
+    </div>
     <div class="cosmostar-watermark">© Cosmostar</div>
 </div>
 
@@ -804,7 +823,7 @@
             
             const relationType = checkedRadio.value;
 
-            // 🌟 觸發 GA4 事件：計算解析 🌟
+            // 觸發 GA4 事件：計算解析
             if (typeof gtag === 'function') {
                 gtag('event', 'calculate_match', {
                     'event_category': 'Engagement',
@@ -859,14 +878,14 @@
         return new Blob([u8arr], {type:mime});
     }
 
-    // 🌟 核心出圖邏輯 🌟
+    // 核心出圖邏輯
     function generateAndShare() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const shareCard = document.getElementById('shareCardHidden');
         loadingOverlay.style.display = 'flex';
         document.getElementById('loadingText').innerText = "產生高畫質圖卡中...";
         
-        // 🌟 觸發 GA4 事件：產生圖卡 🌟
+        // 觸發 GA4 事件：產生圖卡
         if (typeof gtag === 'function') {
             gtag('event', 'generate_image', {
                 'event_category': 'Engagement'
@@ -882,7 +901,7 @@
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 
-                // 電腦版無條件直接下載 (不跳視窗)
+                // 電腦版直載
                 const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 if (isDesktop) {
                     const link = document.createElement('a');
@@ -895,7 +914,7 @@
                     return; 
                 }
 
-                // 手機版：彈出雙按鈕預覽視窗
+                // 手機版：彈出預覽視窗
                 const blob = dataURLtoBlob(imgData);
                 const blobUrl = URL.createObjectURL(blob);
                 document.getElementById('generatedImage').src = blobUrl;
@@ -910,9 +929,9 @@
         }, 500); 
     }
 
-    // 🟩 純下載功能 (綠色按鈕)
+    // 純下載功能
     function downloadImageDirectly() {
-        // 🌟 觸發 GA4 事件：下載圖卡 🌟
+        // 觸發 GA4 事件：下載圖卡
         if (typeof gtag === 'function') {
             gtag('event', 'download_image', { 'event_category': 'Conversion' });
         }
@@ -929,9 +948,9 @@
         document.body.removeChild(link);
     }
 
-    // 🟦 純分享功能 (藍色按鈕)
+    // 純分享功能
     async function shareImageNative() {
-        // 🌟 觸發 GA4 事件：分享圖卡 🌟
+        // 觸發 GA4 事件：分享圖卡
         if (typeof gtag === 'function') {
             gtag('event', 'share_image', { 'event_category': 'Conversion' });
         }
